@@ -176,7 +176,7 @@ const Home = () => {
         <meta name="twitter:card" content="summary_large_image"/>
         <meta property="og:url" content="https://outdoorclock.vercel.app/" />
         <meta property="og:title" content="Outdoor Clock" />
-        <meta property="og:description" content="日の入りを00:00、日の出を12:00に設定した不定時制の時計です。午前と午後で1秒の長さが変わります。アウトドアのおともにどうぞ。" />
+        <meta property="og:description" content="日の入りを00:00、日の出を12:00に設定した不定時法の時計です。午前と午後で1秒の長さが変わります。アウトドアのおともにどうぞ。" />
         <meta property="og:image" content="https://outdoorclock.vercel.app/thumb.jpg" />
       </Head>
 
@@ -242,7 +242,7 @@ const Home = () => {
           <Fade in={open}>
             <div className={classes.paper}>
               <h2 id="transition-modal-title">Outdoor clock</h2>
-              <p id="transition-modal-description">日の出を00:00、日の入りを12:00とする不定時制の時計です。</p>
+              <p id="transition-modal-description">日の出を00:00、日の入りを12:00とする不定時法の時計です。</p>
               <p>午前と午後で1秒の長さが変わります。</p>
               <p>アウトドアのおともにどうぞ。</p>
               <p className={"license"} onClick={handleLicenseOpen}>license</p>
