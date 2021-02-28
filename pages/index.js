@@ -162,10 +162,10 @@ const Home = () => {
       <Head>
         <title>Outdoor clock</title>
         <meta name="twitter:card" content="summary_large_image"/>
-        <meta property="og:url" content="https://outdoorclock.vercel.app/" /> <!--③-->
-        <meta property="og:title" content="Outdoor Clock" /> <!--④-->
-        <meta property="og:description" content="日の入りを00:00、日の出を12:00に設定した不定時制の時計です。午前と午後で1秒の長さが変わります。アウトドアのおともにどうぞ。" /> <!--⑤-->
-        <meta property="og:image" content="https://outdoorclock.vercel.app/thumb.jpg" /> <!--⑥-->
+        <meta property="og:url" content="https://outdoorclock.vercel.app/" />
+        <meta property="og:title" content="Outdoor Clock" />
+        <meta property="og:description" content="日の入りを00:00、日の出を12:00に設定した不定時制の時計です。午前と午後で1秒の長さが変わります。アウトドアのおともにどうぞ。" />
+        <meta property="og:image" content="https://outdoorclock.vercel.app/thumb.jpg" />
       </Head>
 
       <main>
