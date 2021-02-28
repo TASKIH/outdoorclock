@@ -1,62 +1,213 @@
 import Head from 'next/head'
+import Link from 'next/link'
+import {useCallback, useEffect, useState} from "react";
+import * as SunCalc from 'suncalc'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faLocationArrow,  faQuestionCircle} from '@fortawesome/free-solid-svg-icons'
+import {Backdrop, Button, Fade, makeStyles, Modal} from "@material-ui/core";
+import LocationOnIcon from '@material-ui/icons/LocationOn';
+import {HelpOutline} from "@material-ui/icons";
 
-export default function Home() {
+function addDays(date, days) {
+  let result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+function zeroPadding(num,length){
+  return ('0000000000' + num).slice(-length);
+}
+
+const useStyles = makeStyles((theme) => ({
+  modal: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paper: {
+    backgroundColor: theme.palette.background.paper,
+    border: '2px solid #000',
+    boxShadow: theme.shadows[5],
+    padding: theme.spacing(2, 4, 3),
+  },
+}));
+
+const Home = () => {
+  const classes = useStyles();
+  const [state, setState] = useState({
+    timeString: "00:00:00",
+    dayStartTime: 0,
+    sunsetTime: 0,
+    dayEndTime: 0,
+    yesterdaySunsetTime: 0,
+    calcSecPerRealMS: 1,
+    latitude: 35.41,
+    longitude: 139.41,
+  });
+  const [open, setOpen] = useState(false);
+
+  const handleOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const calcStartTime = useCallback((date, latitude, longitude) => {
+    const times = SunCalc.getTimes(date, latitude, longitude);
+    const tomorrowTimes = SunCalc.getTimes(addDays(date, 1), latitude, longitude);
+    const yesterdayTimes = SunCalc.getTimes(addDays(date, -1), latitude, longitude);
+    setState((prev) => ({
+      ...prev,
+      dayStartTime: times.sunrise,
+      sunsetTime: times.sunset,
+      dayEndTime: tomorrowTimes.sunrise,
+      yesterdaySunsetTime: yesterdayTimes.sunset
+    }));
+    const newState = {
+      dayStartTime: times.sunrise,
+      sunsetTime: times.sunset,
+      dayEndTime: tomorrowTimes.sunrise,
+      yesterdaySunsetTime: yesterdayTimes.sunset
+    }
+    return newState;
+  }, [setState]);
+  const getLatitudeAndLongitude = useCallback(() => {
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setState((prev) => ({
+            ...prev,
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude
+          }));
+          calcStartTime(new Date(), pos.coords.latitude, pos.coords.longitude);
+        },
+        err => {
+          console.log("error");
+        }
+    );
+  }, [calcStartTime]);
+  const changeDay = useCallback(() => {
+    calcStartTime(new Date(), state.latitude, state.longitude);
+  }, [state, calcStartTime]);
+  const getCurrentTimeString = useCallback(() => {
+    if (!state.dayEndTime) {
+      changeDay();
+      return;
+    }
+    const currentDate = new Date();
+    let times = null;
+    if (state.dayEndTime < currentDate) {
+      times = changeDay();
+    }
+    const dayStartTime = (times)? times.dayStartTime: state.dayStartTime;
+    const sunsetTime = (times)? times.sunsetTime: state.sunsetTime;
+    const dayEndTime = (times)? times.dayEndTime: state.dayEndTime;
+    const yesterdaySunsetTime = (times)? times.yesterdaySunsetTime: state.yesterdaySunsetTime;
+
+    const basisTime = 1000 * 60 * 60 * 12;
+    if (currentDate < dayStartTime) {
+      const realTimeAfterSunSet = currentDate - yesterdaySunsetTime;
+      const nightTime = dayStartTime - yesterdaySunsetTime;
+      // 計算上の1ミリ秒を実際のミリ秒で表現
+      const realMsForCalcMs = nightTime / basisTime;
+      const calcMS = realTimeAfterSunSet / realMsForCalcMs;
+      const hour = Math.floor(calcMS / (1000 * 60 * 60)) + 12;
+      const min = Math.floor((calcMS % (1000 * 60 * 60)) / (1000 * 60));
+      const sec = Math.floor((calcMS % (1000 * 60)) / (1000));
+      setState((prev) => ({
+        ...prev,
+        calcSecPerRealMS: realMsForCalcMs,
+        timeString: `${zeroPadding(hour, 2)}:${zeroPadding(min, 2)}:${zeroPadding(sec, 2)}`
+      }));
+    }
+    else if (currentDate > sunsetTime) {
+      const realTimeAfterSunSet = currentDate - sunsetTime;
+      const nightTime = dayEndTime - sunsetTime;
+      // 計算上の1ミリ秒を実際のミリ秒で表現
+      const realMsForCalcMs = nightTime / basisTime;
+      const calcMS = realTimeAfterSunSet / realMsForCalcMs;
+      const hour = Math.floor(calcMS / (1000 * 60 * 60)) + 12;
+      const min = Math.floor((calcMS % (1000 * 60 * 60)) / (1000 * 60));
+      const sec = Math.floor((calcMS % (1000 * 60)) / (1000));
+      setState((prev) => ({
+        ...prev,
+        calcSecPerRealMS: realMsForCalcMs,
+        timeString: `${zeroPadding(hour, 2)}:${zeroPadding(min, 2)}:${zeroPadding(sec, 2)}`
+      }));
+    } else {
+      const realTimeAfterDayStart = currentDate - dayStartTime;
+      const dayTime = sunsetTime - dayStartTime;
+      // 計算上の1ミリ秒を実際のミリ秒で表現
+      const realMsForCalcMs = dayTime / basisTime;
+      const calcMS = realTimeAfterDayStart / realMsForCalcMs;
+      const hour = Math.floor(calcMS / (1000 * 60 * 60));
+      const min = Math.floor((calcMS % (1000 * 60 * 60)) / (1000 * 60));
+      const sec = Math.floor((calcMS % (1000 * 60)) / (1000));
+      setState((prev) => ({
+        ...prev,
+        calcSecPerRealMS: realMsForCalcMs,
+        timeString: `${zeroPadding(hour, 2)}:${zeroPadding(min, 2)}:${zeroPadding(sec, 2)}`
+      }));
+    }
+  }, [changeDay, state.dayStartTime, state.sunsetTime, state.dayEndTime, setState]);
+  useEffect(() => {
+    const intervalId = setInterval(()=>{
+      getCurrentTimeString();
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [getCurrentTimeString]);
   return (
     <div className="container">
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>Outdoor clock</title>
       </Head>
 
       <main>
         <h1 className="title">
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
+          {state.timeString}
         </h1>
-
-        <p className="description">
-          Get started by editing <code>pages/index.js</code>
-        </p>
-
-        <div className="grid">
-          <a href="https://nextjs.org/docs" className="card">
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className="card">
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className="card"
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="card"
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Modal
+            aria-labelledby="transition-modal-title"
+            aria-describedby="transition-modal-description"
+            className={classes.modal}
+            open={open}
+            onClose={handleClose}
+            closeAfterTransition
+            BackdropComponent={Backdrop}
+            BackdropProps={{
+              timeout: 500,
+            }}
         >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className="logo" />
-        </a>
+          <Fade in={open}>
+            <div className={classes.paper}>
+              <h2 id="transition-modal-title">Outdoor clock</h2>
+              <p id="transition-modal-description">日の出を00:00、日の入りを12:00とする不定時制の時計です。</p>
+              <p>午前と午後で1秒の長さが変わります。</p>
+              <p>アウトドアのおともにどうぞ。</p>
+            </div>
+          </Fade>
+        </Modal>
+      </main>
+      <footer>
+        <span className={"logo"}>Outdoor Clock</span>
+        <div className={"icons"}>
+          <Button
+              onClick={getLatitudeAndLongitude}
+              variant="contained"
+              color="secondary"
+              startIcon={<LocationOnIcon />}
+          >
+            Set Location
+          </Button>
+          <Button
+              onClick={handleOpen}
+              variant="contained"
+              startIcon={<HelpOutline />}
+          >
+            About
+          </Button>
+        </div>
       </footer>
 
       <style jsx>{`
@@ -68,7 +219,23 @@ export default function Home() {
           justify-content: center;
           align-items: center;
         }
-
+        .icon {
+          height: 24px;
+          cursor: pointer;
+        }
+        .icons {
+          position: absolute;
+          right: 5px;
+          width: 300px;
+          display: flex;
+        }
+        .logo {
+          position: absolute;
+          left: 32px;
+        }
+        .fa {
+          font-size: 12px;
+        }
         main {
           padding: 5rem 0;
           flex: 1;
@@ -80,11 +247,13 @@ export default function Home() {
 
         footer {
           width: 100%;
-          height: 100px;
+          height: 60px;
           border-top: 1px solid #eaeaea;
           display: flex;
           justify-content: center;
           align-items: center;
+          position: fixed;
+          bottom: 0px;
         }
 
         footer img {
@@ -207,3 +376,5 @@ export default function Home() {
     </div>
   )
 }
+
+export default Home;
