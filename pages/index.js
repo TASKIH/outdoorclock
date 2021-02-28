@@ -29,6 +29,9 @@ const useStyles = makeStyles((theme) => ({
     boxShadow: theme.shadows[5],
     padding: theme.spacing(2, 4, 3),
   },
+  pre: {
+    maxWidth: '80%'
+  }
 }));
 
 const Home = () => {
@@ -44,6 +47,8 @@ const Home = () => {
     longitude: 139.41,
   });
   const [open, setOpen] = useState(false);
+  const [licenseOpen, setLicenseOpen] = useState(false);
+
 
   const handleOpen = () => {
     setOpen(true);
@@ -53,6 +58,13 @@ const Home = () => {
     setOpen(false);
   };
 
+  const handleLicenseOpen = () => {
+    setLicenseOpen(true);
+  };
+
+  const handleLicenseClose = () => {
+    setLicenseOpen(false);
+  };
   const calcStartTime = useCallback((date, latitude, longitude) => {
     const times = SunCalc.getTimes(date, latitude, longitude);
     const tomorrowTimes = SunCalc.getTimes(addDays(date, 1), latitude, longitude);
@@ -154,7 +166,7 @@ const Home = () => {
   useEffect(() => {
     const intervalId = setInterval(()=>{
       getCurrentTimeString();
-    }, 1000);
+    }, 300);
     return () => clearInterval(intervalId);
   }, [getCurrentTimeString]);
   return (
@@ -176,6 +188,49 @@ const Home = () => {
             aria-labelledby="transition-modal-title"
             aria-describedby="transition-modal-description"
             className={classes.modal}
+            open={licenseOpen}
+            onClose={handleLicenseClose}
+            closeAfterTransition
+            BackdropComponent={Backdrop}
+            BackdropProps={{
+              timeout: 500,
+            }}
+        >
+          <Fade in={licenseOpen}>
+            <div className={classes.paper}>
+              <p id="transition-modal-title">このサイトでは日の出、日の入り時刻の計算にsuncalcを使用しています。以下はライセンス表示です。</p>
+              <p><Link href={"https://github.com/mourner/suncalc"}>suncalc</Link></p>
+              <small className={classes.pre}>
+                  Copyright (c) 2014, Vladimir Agafonkin
+                  All rights reserved.
+
+                  Redistribution and use in source and binary forms, with or without modification, are
+                  permitted provided that the following conditions are met:
+
+                     1. Redistributions of source code must retain the above copyright notice, this list of
+                        conditions and the following disclaimer.
+
+                     2. Redistributions in binary form must reproduce the above copyright notice, this list
+                        of conditions and the following disclaimer in the documentation and/or other materials
+                        provided with the distribution.
+
+                  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+                  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+                  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+                  COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+                  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+                  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+                  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+                  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+                  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+              </small>
+            </div>
+          </Fade>
+        </Modal>
+        <Modal
+            aria-labelledby="transition-modal-title"
+            aria-describedby="transition-modal-description"
+            className={classes.modal}
             open={open}
             onClose={handleClose}
             closeAfterTransition
@@ -190,6 +245,7 @@ const Home = () => {
               <p id="transition-modal-description">日の出を00:00、日の入りを12:00とする不定時制の時計です。</p>
               <p>午前と午後で1秒の長さが変わります。</p>
               <p>アウトドアのおともにどうぞ。</p>
+              <p className={"license"} onClick={handleLicenseOpen}>license</p>
             </div>
           </Fade>
         </Modal>
@@ -275,7 +331,13 @@ const Home = () => {
           color: inherit;
           text-decoration: none;
         }
-
+        .license {
+          font-size: 0.3em;
+          position: relative;
+          right: 0;
+          bottom: 0;
+          cursor: pointer;
+        }
         .title a {
           color: #0070f3;
           text-decoration: none;
